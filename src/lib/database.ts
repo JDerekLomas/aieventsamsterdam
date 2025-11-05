@@ -1,99 +1,79 @@
-import Database from 'better-sqlite3';
 import { Event } from '@/types/event';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 
-const dbPath = process.env.DATABASE_URL || path.join(process.cwd(), 'data', 'events.db');
-const db = new Database(dbPath);
+const dataDir = path.join(process.cwd(), 'data');
+const eventsFile = path.join(dataDir, 'events.json');
 
-// Initialize database
+// Initialize data directory and file
 export function initializeDatabase(): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS events (
-      id TEXT PRIMARY KEY,
-      title TEXT NOT NULL,
-      description TEXT,
-      startDate TEXT NOT NULL,
-      endDate TEXT NOT NULL,
-      location TEXT,
-      url TEXT,
-      source TEXT NOT NULL,
-      tags TEXT,
-      price TEXT,
-      organizer TEXT,
-      imageUrl TEXT,
-      createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL
-    );
+  if (!existsSync(dataDir)) {
+    mkdirSync(dataDir, { recursive: true });
+  }
 
-    CREATE INDEX IF NOT EXISTS idx_events_startDate ON events(startDate);
-    CREATE INDEX IF NOT EXISTS idx_events_source ON events(source);
-  `);
+  if (!existsSync(eventsFile)) {
+    writeFileSync(eventsFile, JSON.stringify([], null, 2));
+  }
 }
 
 export function saveEvent(event: Event): void {
-  const stmt = db.prepare(`
-    INSERT OR REPLACE INTO events (
-      id, title, description, startDate, endDate, location, url, source, tags,
-      price, organizer, imageUrl, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
+  initializeDatabase();
 
-  stmt.run(
-    event.id,
-    event.title,
-    event.description,
-    event.startDate.toISOString(),
-    event.endDate.toISOString(),
-    event.location,
-    event.url,
-    event.source,
-    JSON.stringify(event.tags),
-    event.price || null,
-    event.organizer || null,
-    event.imageUrl || null,
-    event.createdAt.toISOString(),
-    event.updatedAt.toISOString()
-  );
+  const events = getAllEvents();
+  const existingIndex = events.findIndex(e => e.id === event.id);
+
+  if (existingIndex >= 0) {
+    events[existingIndex] = event;
+  } else {
+    events.push(event);
+  }
+
+  // Sort by start date
+  events.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+
+  writeFileSync(eventsFile, JSON.stringify(events, null, 2));
 }
 
 export function getAllEvents(): Event[] {
-  const stmt = db.prepare('SELECT * FROM events ORDER BY startDate ASC');
-  const rows = stmt.all() as any[];
+  initializeDatabase();
 
-  return rows.map(row => ({
-    ...row,
-    startDate: new Date(row.startDate),
-    endDate: new Date(row.endDate),
-    createdAt: new Date(row.createdAt),
-    updatedAt: new Date(row.updatedAt),
-    tags: JSON.parse(row.tags || '[]')
-  }));
+  try {
+    const data = readFileSync(eventsFile, 'utf-8');
+    const events = JSON.parse(data) as any[];
+
+    return events.map(event => ({
+      ...event,
+      startDate: new Date(event.startDate),
+      endDate: new Date(event.endDate),
+      createdAt: new Date(event.createdAt),
+      updatedAt: new Date(event.updatedAt),
+      tags: event.tags || []
+    }));
+  } catch (error) {
+    console.error('Error reading events:', error);
+    return [];
+  }
 }
 
 export function getUpcomingEvents(days: number = 30): Event[] {
-  const stmt = db.prepare(`
-    SELECT * FROM events
-    WHERE startDate >= datetime('now')
-    AND startDate <= datetime('now', '+' || ? || ' days')
-    ORDER BY startDate ASC
-  `);
-  const rows = stmt.all(days) as any[];
+  const events = getAllEvents();
+  const now = new Date();
+  const cutoffDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 
-  return rows.map(row => ({
-    ...row,
-    startDate: new Date(row.startDate),
-    endDate: new Date(row.endDate),
-    createdAt: new Date(row.createdAt),
-    updatedAt: new Date(row.updatedAt),
-    tags: JSON.parse(row.tags || '[]')
-  }));
+  return events
+    .filter(event => event.startDate >= now && event.startDate <= cutoffDate)
+    .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 }
 
 export function deleteEvent(id: string): void {
-  const stmt = db.prepare('DELETE FROM events WHERE id = ?');
-  stmt.run(id);
+  initializeDatabase();
+
+  const events = getAllEvents();
+  const filteredEvents = events.filter(e => e.id !== id);
+
+  writeFileSync(eventsFile, JSON.stringify(filteredEvents, null, 2));
 }
 
 export function closeDatabase(): void {
-  db.close();
+  // No-op for JSON file storage
 }

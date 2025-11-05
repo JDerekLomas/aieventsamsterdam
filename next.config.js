@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['better-sqlite3']
-  },
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   }
