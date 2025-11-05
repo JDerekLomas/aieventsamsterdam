@@ -4,7 +4,10 @@ import { ConferenceAgent } from './ConferenceAgent';
 import { BaseAgent } from './BaseAgent';
 import { Event } from '@/types/event';
 
-export { BaseAgent, MeetupAgent, EventbriteAgent, ConferenceAgent };
+export { BaseAgent } from './BaseAgent';
+export { MeetupAgent } from './MeetupAgent';
+export { EventbriteAgent } from './EventbriteAgent';
+export { ConferenceAgent } from './ConferenceAgent';
 
 export class AgentManager {
   private agents: BaseAgent[];

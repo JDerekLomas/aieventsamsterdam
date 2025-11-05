@@ -1,4 +1,4 @@
-import { BaseAgent } from './BaseAgent';
+import { BaseAgent } from '@/agents/BaseAgent';
 import { Event, EventSource } from '@/types/event';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
