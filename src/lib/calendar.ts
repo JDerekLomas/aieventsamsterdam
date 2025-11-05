@@ -39,7 +39,7 @@ export class CalendarManager {
         description: this.formatEventDescription(event),
         location: event.location,
         url: event.url,
-        categories: event.tags,
+        categories: event.tags as any,
         created: event.createdAt,
         lastModified: event.updatedAt
       });
