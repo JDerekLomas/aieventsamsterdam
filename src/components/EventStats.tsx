@@ -32,7 +32,8 @@ export function EventStats() {
         const allData = await allResponse.json();
         const upcomingData = await upcomingResponse.json();
 
-        const sources = [...new Set(allData.events?.map((event: any) => event.source) || [])];
+        const sourceSet = new Set(allData.events?.map((event: any) => event.source) || []);
+        const sources = Array.from(sourceSet);
 
         setStats({
           totalEvents: allData.events?.length || 0,
