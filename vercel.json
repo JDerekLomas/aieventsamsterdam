@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "MEETUP_API_KEY": "@meetup_api_key",
+    "EVENTBRITE_API_KEY": "@eventbrite_api_key",
+    "CRON_SCHEDULE": "0 */2 * * *",
+    "CALENDAR_NAME": "AI Events Amsterdam",
+    "CALENDAR_DESCRIPTION": "AI-related events happening in Amsterdam"
+  },
+  "build": {
+    "env": {
+      "NEXT_TELEMETRY_DISABLED": "1"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/calendars/:path*",
+      "destination": "/api/events"
+    }
+  ]
+}

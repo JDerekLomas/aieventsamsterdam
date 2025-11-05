@@ -1,0 +1,41 @@
+{
+  "name": "aieventsamsterdam",
+  "version": "1.0.0",
+  "description": "An agent based system for continually updating a calendar of AI related events in Amsterdam",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "run-agents": "tsx src/scripts/run-agents.ts",
+    "test-agents": "tsx src/scripts/test-agents.ts"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "node-cron": "^3.0.3",
+    "cheerio": "^1.0.0-rc.12",
+    "axios": "^1.6.0",
+    "date-fns": "^2.30.0",
+    "ical-generator": "^4.1.0",
+    "sqlite3": "^5.1.6",
+    "better-sqlite3": "^9.2.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/cheerio": "^0.22.35",
+    "typescript": "^5.0.0",
+    "tsx": "^4.6.0",
+    "tailwindcss": "^3.3.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0"
+  }
+}
