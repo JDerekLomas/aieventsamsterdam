@@ -1,0 +1,231 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --primary: 24 95% 53%; /* Saffron */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 187 85% 43%; /* Peacock Blue */
+    --secondary-foreground: 0 0% 100%;
+    --accent: 330 81% 60%; /* Lotus Pink */
+    --accent-foreground: 0 0% 100%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 24 95% 53%;
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  /* Indian-inspired decorative elements */
+  .rangoli-border {
+    @apply relative;
+  }
+
+  .rangoli-border::before {
+    content: '';
+    @apply absolute inset-0 border-4 border-saffron-500 rounded-xl;
+    background: linear-gradient(90deg,
+      theme('colors.saffron.500') 0%,
+      theme('colors.gold.500') 25%,
+      theme('colors.peacock.500') 50%,
+      theme('colors.lotus.500') 75%,
+      theme('colors.saffron.500') 100%
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    padding: 3px;
+    border-radius: inherit;
+  }
+
+  .gradient-indian {
+    @apply bg-gradient-to-r from-saffron-500 via-gold-500 to-peacock-500;
+  }
+
+  .gradient-lotus {
+    @apply bg-gradient-to-r from-lotus-400 via-lotus-500 to-lotus-600;
+  }
+
+  /* Card styles */
+  .card-interactive {
+    @apply bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1;
+  }
+
+  /* Button styles */
+  .btn-primary {
+    @apply bg-saffron-500 text-white px-6 py-3 rounded-lg font-semibold
+           hover:bg-saffron-600 active:bg-saffron-700
+           transition-all duration-200
+           shadow-md hover:shadow-lg;
+  }
+
+  .btn-secondary {
+    @apply bg-peacock-500 text-white px-6 py-3 rounded-lg font-semibold
+           hover:bg-peacock-600 active:bg-peacock-700
+           transition-all duration-200
+           shadow-md hover:shadow-lg;
+  }
+
+  .btn-accent {
+    @apply bg-lotus-500 text-white px-6 py-3 rounded-lg font-semibold
+           hover:bg-lotus-600 active:bg-lotus-700
+           transition-all duration-200
+           shadow-md hover:shadow-lg;
+  }
+
+  /* Badge styles */
+  .badge-earned {
+    @apply relative overflow-hidden;
+  }
+
+  .badge-earned::after {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent;
+    animation: shine 2s infinite;
+  }
+
+  @keyframes shine {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) rotate(45deg); }
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-4 bg-gray-200 rounded-full overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-500 ease-out;
+    background: linear-gradient(90deg,
+      theme('colors.saffron.400'),
+      theme('colors.saffron.500'),
+      theme('colors.gold.500')
+    );
+  }
+
+  /* Skill tree node */
+  .skill-node {
+    @apply w-16 h-16 rounded-full flex items-center justify-center
+           border-4 transition-all duration-300 cursor-pointer;
+  }
+
+  .skill-node-locked {
+    @apply bg-gray-200 border-gray-300 text-gray-400;
+  }
+
+  .skill-node-available {
+    @apply bg-white border-peacock-400 text-peacock-600
+           hover:border-peacock-500 hover:scale-110 animate-pulse-glow;
+  }
+
+  .skill-node-in-progress {
+    @apply bg-peacock-100 border-peacock-500 text-peacock-700;
+  }
+
+  .skill-node-mastered {
+    @apply bg-gradient-to-br from-gold-400 to-saffron-500
+           border-gold-500 text-white shadow-lg;
+  }
+
+  /* MCQ Option styles */
+  .mcq-option {
+    @apply p-4 rounded-xl border-2 border-gray-200 bg-white
+           cursor-pointer transition-all duration-200
+           hover:border-peacock-400 hover:bg-peacock-50;
+  }
+
+  .mcq-option-selected {
+    @apply border-peacock-500 bg-peacock-100;
+  }
+
+  .mcq-option-correct {
+    @apply border-emerald-500 bg-emerald-100;
+  }
+
+  .mcq-option-incorrect {
+    @apply border-red-500 bg-red-100;
+  }
+
+  /* XP animation */
+  .xp-popup {
+    @apply fixed text-2xl font-bold text-gold-500 pointer-events-none;
+    animation: xp-float 1.5s ease-out forwards;
+  }
+
+  @keyframes xp-float {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: translateY(-30px) scale(1.2);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-60px) scale(0.8);
+    }
+  }
+
+  /* Streak flame */
+  .streak-flame {
+    @apply relative;
+  }
+
+  .streak-flame::after {
+    content: '🔥';
+    @apply absolute -top-2 -right-2 text-lg;
+    animation: flame-flicker 0.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes flame-flicker {
+    0% { transform: scale(1) rotate(-5deg); }
+    100% { transform: scale(1.1) rotate(5deg); }
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-saffron-300 rounded-full hover:bg-saffron-400;
+}
+
+/* Selection styling */
+::selection {
+  @apply bg-saffron-200 text-saffron-900;
+}

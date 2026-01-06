@@ -1,0 +1,471 @@
+// PlayPowerLearn Database Schema
+// AI-Generated Educational LMS with Gamified Learning
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// AUTHENTICATION & USERS
+// ============================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          UserRole  @default(STUDENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  // Role-specific profiles
+  teacherProfile TeacherProfile?
+  studentProfile StudentProfile?
+  parentProfile  ParentProfile?
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+// ============================================
+// USER PROFILES
+// ============================================
+
+model TeacherProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schoolName   String?
+  gradesTaught String[] // e.g., ["K", "1", "2"]
+  subjects     String[] // e.g., ["Math", "Literacy"]
+  bio          String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  classrooms   Classroom[]
+  assignments  Assignment[]
+}
+
+model StudentProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grade        String   // e.g., "3" for 3rd grade
+  avatarId     String?
+  totalXP      Int      @default(0)
+  currentLevel Int      @default(1)
+  streakDays   Int      @default(0)
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  classroomEnrollments ClassroomEnrollment[]
+  activityAttempts     ActivityAttempt[]
+  badges               StudentBadge[]
+  skillProgress        SkillProgress[]
+  parentConnections    ParentStudentLink[]
+}
+
+model ParentProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  childConnections ParentStudentLink[]
+}
+
+model ParentStudentLink {
+  id        String         @id @default(cuid())
+  parentId  String
+  studentId String
+  parent    ParentProfile  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  @@unique([parentId, studentId])
+}
+
+// ============================================
+// CLASSROOMS & ENROLLMENTS
+// ============================================
+
+model Classroom {
+  id          String         @id @default(cuid())
+  name        String
+  grade       String
+  subject     String
+  joinCode    String         @unique
+  teacherId   String
+  teacher     TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  enrollments ClassroomEnrollment[]
+  assignments Assignment[]
+}
+
+model ClassroomEnrollment {
+  id          String         @id @default(cuid())
+  classroomId String
+  studentId   String
+  classroom   Classroom      @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  enrolledAt  DateTime       @default(now())
+
+  @@unique([classroomId, studentId])
+}
+
+// ============================================
+// COMMON CORE STANDARDS
+// ============================================
+
+model Standard {
+  id          String   @id @default(cuid())
+  code        String   @unique // e.g., "CCSS.MATH.CONTENT.3.OA.A.1"
+  domain      String   // e.g., "Operations & Algebraic Thinking"
+  cluster     String   // e.g., "Represent and solve problems involving multiplication and division"
+  description String   @db.Text
+  grade       String   // e.g., "3" or "K"
+  subject     Subject
+  parentId    String?
+  parent      Standard? @relation("StandardHierarchy", fields: [parentId], references: [id])
+  children    Standard[] @relation("StandardHierarchy")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  activities Activity[]
+  skills     Skill[]
+}
+
+enum Subject {
+  MATH
+  LITERACY
+  SCIENCE
+  SOCIAL_STUDIES
+}
+
+// ============================================
+// ACTIVITIES & CONTENT
+// ============================================
+
+model Activity {
+  id              String       @id @default(cuid())
+  title           String
+  description     String       @db.Text
+  type            ActivityType
+  subject         Subject
+  grade           String
+  difficulty      Difficulty   @default(MEDIUM)
+  estimatedTime   Int          // in minutes
+  xpReward        Int          @default(10)
+  isAIGenerated   Boolean      @default(false)
+  aiPromptUsed    String?      @db.Text
+  content         Json         // Flexible content structure
+  thumbnail       String?
+  isPublished     Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  standards       Standard[]
+  questions       Question[]
+  attempts        ActivityAttempt[]
+  assignments     Assignment[]
+  progressionItems ProgressionItem[]
+}
+
+enum ActivityType {
+  MCQ_PRACTICE     // Multiple choice questions
+  GAME             // Interactive game
+  VIDEO            // Educational video
+  READING          // Reading comprehension
+  WORKSHEET        // Printable worksheet
+  INTERACTIVE      // Interactive simulation
+  ASSESSMENT       // Formal assessment
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  ADAPTIVE
+}
+
+// ============================================
+// QUESTIONS (for MCQ Practice)
+// ============================================
+
+model Question {
+  id           String   @id @default(cuid())
+  activityId   String
+  activity     Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  questionText String   @db.Text
+  questionType QuestionType
+  options      Json     // Array of options with text and isCorrect
+  explanation  String?  @db.Text
+  hint         String?
+  difficulty   Difficulty @default(MEDIUM)
+  order        Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  responses QuestionResponse[]
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  FILL_BLANK
+  MATCHING
+  ORDERING
+}
+
+// ============================================
+// PROGRESSIONS (Learning Paths)
+// ============================================
+
+model Progression {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  subject     Subject
+  grade       String
+  thumbnail   String?
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       ProgressionItem[]
+  assignments Assignment[]
+}
+
+model ProgressionItem {
+  id            String     @id @default(cuid())
+  progressionId String
+  progression   Progression @relation(fields: [progressionId], references: [id], onDelete: Cascade)
+  activityId    String
+  activity      Activity    @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  order         Int
+  isRequired    Boolean     @default(true)
+  unlockAfter   Int?        // Order of prerequisite item
+
+  @@unique([progressionId, order])
+}
+
+// ============================================
+// ASSIGNMENTS
+// ============================================
+
+model Assignment {
+  id            String          @id @default(cuid())
+  teacherId     String
+  teacher       TeacherProfile  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  classroomId   String
+  classroom     Classroom       @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  activityId    String?
+  activity      Activity?       @relation(fields: [activityId], references: [id])
+  progressionId String?
+  progression   Progression?    @relation(fields: [progressionId], references: [id])
+  title         String
+  instructions  String?         @db.Text
+  dueDate       DateTime?
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+// ============================================
+// STUDENT PROGRESS & ATTEMPTS
+// ============================================
+
+model ActivityAttempt {
+  id           String         @id @default(cuid())
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  activityId   String
+  activity     Activity       @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  startedAt    DateTime       @default(now())
+  completedAt  DateTime?
+  score        Float?         // Percentage score
+  xpEarned     Int            @default(0)
+  timeSpent    Int?           // in seconds
+  status       AttemptStatus  @default(IN_PROGRESS)
+
+  responses QuestionResponse[]
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+model QuestionResponse {
+  id           String          @id @default(cuid())
+  attemptId    String
+  attempt      ActivityAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  response     Json            // Student's response
+  isCorrect    Boolean
+  timeTaken    Int?            // in seconds
+  hintsUsed    Int             @default(0)
+  answeredAt   DateTime        @default(now())
+
+  @@unique([attemptId, questionId])
+}
+
+// ============================================
+// GAMIFICATION: BADGES
+// ============================================
+
+model Badge {
+  id           String      @id @default(cuid())
+  name         String
+  description  String
+  imageUrl     String
+  category     BadgeCategory
+  requirement  Json        // Conditions to earn the badge
+  xpBonus      Int         @default(0)
+  isSecret     Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+
+  students StudentBadge[]
+}
+
+enum BadgeCategory {
+  ACHIEVEMENT     // Complete X activities
+  STREAK          // Login/practice streaks
+  MASTERY         // Master a skill/standard
+  EXPLORATION     // Try different activities
+  SOCIAL          // Help others, collaborate
+  SPECIAL         // Limited time, events
+}
+
+model StudentBadge {
+  id        String         @id @default(cuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge          @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  earnedAt  DateTime       @default(now())
+
+  @@unique([studentId, badgeId])
+}
+
+// ============================================
+// GAMIFICATION: SKILL TREES
+// ============================================
+
+model SkillTree {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  subject     Subject
+  grade       String
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+
+  skills Skill[]
+}
+
+model Skill {
+  id           String    @id @default(cuid())
+  treeId       String
+  tree         SkillTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  standardId   String?
+  standard     Standard? @relation(fields: [standardId], references: [id])
+  name         String
+  description  String
+  iconUrl      String?
+  maxLevel     Int       @default(5)
+  xpPerLevel   Int       @default(100)
+  positionX    Int       // For visual tree layout
+  positionY    Int
+  prerequisites String[] // Array of skill IDs
+
+  progress SkillProgress[]
+}
+
+model SkillProgress {
+  id           String         @id @default(cuid())
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skillId      String
+  skill        Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  currentLevel Int            @default(0)
+  currentXP    Int            @default(0)
+  unlockedAt   DateTime?
+  masteredAt   DateTime?
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([studentId, skillId])
+}
+
+// ============================================
+// AI GENERATION LOGS
+// ============================================
+
+model AIGenerationLog {
+  id           String   @id @default(cuid())
+  activityId   String?
+  prompt       String   @db.Text
+  response     String   @db.Text
+  model        String
+  tokens       Int
+  cost         Float?
+  success      Boolean
+  errorMessage String?
+  createdAt    DateTime @default(now())
+}
